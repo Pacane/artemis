@@ -94,7 +94,8 @@ class GeneratorVisitor extends RecursiveVisitor {
   void visitInlineFragmentNode(InlineFragmentNode node) {
     logFn(context, context.align + 1,
         '${context.path}: ... on ${node.typeCondition!.on.name.value}');
-    final nextType = gql.getTypeByName(context.schema, node.typeCondition!.on);
+    final nextType = gql.getTypeByName(
+        context.typeDefinitionNodeVisitor, node.typeCondition!.on);
 
     if (nextType.name.value == context.currentType!.name.value) {
       final visitor = GeneratorVisitor(
@@ -131,7 +132,9 @@ class GeneratorVisitor extends RecursiveVisitor {
     context.usedInputObjects.add(ClassName(name: node.name.value));
 
     for (final field in node.fields) {
-      final type = gql.getTypeByName(context.schema, field.type);
+      final type =
+          gql.getTypeByName(context.typeDefinitionNodeVisitor, field.type);
+
       if (type is InputObjectTypeDefinitionNode) {
         addUsedInputObjectsAndEnums(type);
       } else if (type is EnumTypeDefinitionNode) {
@@ -142,7 +145,9 @@ class GeneratorVisitor extends RecursiveVisitor {
 
   @override
   void visitVariableDefinitionNode(VariableDefinitionNode node) {
-    final leafType = gql.getTypeByName(context.schema, node.type);
+    print(visitVariableDefinitionNode);
+    final leafType =
+        gql.getTypeByName(context.typeDefinitionNodeVisitor, node.type);
 
     final nextClassName = context
         .nextTypeWithNoPath(
@@ -153,10 +158,13 @@ class GeneratorVisitor extends RecursiveVisitor {
         )
         .fullPathName();
 
-    final dartTypeName = gql.buildTypeName(node.type, context.options,
-        dartType: true,
-        replaceLeafWith: ClassName.fromPath(path: nextClassName),
-        schema: context.schema);
+    final dartTypeName = gql.buildTypeName(
+      node.type,
+      context.options,
+      dartType: true,
+      replaceLeafWith: ClassName.fromPath(path: nextClassName),
+      typeDefinitionNodeVisitor: context.typeDefinitionNodeVisitor,
+    );
 
     final jsonKeyAnnotation = <String, String>{};
 
@@ -165,10 +173,12 @@ class GeneratorVisitor extends RecursiveVisitor {
       final variableNodeType = node.type;
       if (variableNodeType is ListTypeNode) {
         final innerDartTypeName = gql.buildTypeName(
-            variableNodeType.type, context.options,
-            dartType: true,
-            replaceLeafWith: ClassName.fromPath(path: nextClassName),
-            schema: context.schema);
+          variableNodeType.type,
+          context.options,
+          dartType: true,
+          replaceLeafWith: ClassName.fromPath(path: nextClassName),
+          typeDefinitionNodeVisitor: context.typeDefinitionNodeVisitor,
+        );
         jsonKeyAnnotation['unknownEnumValue'] =
             '${EnumName(name: innerDartTypeName.name).dartTypeSafe}.${artemisUnknown.name.namePrintable}';
       } else {
@@ -187,7 +197,7 @@ class GeneratorVisitor extends RecursiveVisitor {
           node.type,
           context.options,
           dartType: false,
-          schema: context.schema,
+          typeDefinitionNodeVisitor: context.typeDefinitionNodeVisitor,
         );
 
         jsonKeyAnnotation['fromJson'] =
@@ -261,11 +271,12 @@ class GeneratorVisitor extends RecursiveVisitor {
         '┌ ${nextContext.path}[${node.name.value}]');
     nextContext.fragments.add(node);
 
-    final nextType =
-        gql.getTypeByName(nextContext.schema, node.typeCondition.on);
+    final nextType = gql.getTypeByName(
+        nextContext.typeDefinitionNodeVisitor, node.typeCondition.on);
 
     final visitorContext = Context(
       schema: context.schema,
+      typeDefinitionNodeVisitor: context.typeDefinitionNodeVisitor,
       options: context.options,
       schemaMap: context.schemaMap,
       path: [nextContext.alias].whereType<Name>().toList(),

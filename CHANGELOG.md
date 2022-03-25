@@ -1,9 +1,23 @@
 # CHANGELOG
 
+## 7.3.2-beta
+
+- performance improvements-2
+
+## 7.3.1-beta
+
+- performance improvements
+
+## 7.3.0-beta
+
+- package update
+
 ## 7.2.6-beta
+
 - Fix README
 
 ## 7.2.5-beta
+
 - Format some files to improve `pana` score
 
 ## 7.2.4-beta
